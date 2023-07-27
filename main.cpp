@@ -71,38 +71,78 @@ vector<string> getMoves(const string& board){
 }
 
 class Node{
+private:
+    int h1Cost(){
+        string goalState = "ABCDEFGHIJKLMNO#";
+        int icost = 0;
+        for (int i = 0; i < goalState.size(); i++) {
+            if(goalState[i] != this->state[i]){
+                icost++;
+            }
+        }
+        return(icost);
+    }
+
+    // Utility function to calculate Manhattan distance between two positions
+    int manhattanDistance(int x1, int y1, int x2, int y2) {
+        return (abs(x1 - x2) + abs(y1 - y2));
+    }
+
+    int h2Cost(){
+        string goalState = "ABCDEFGHIJKLMNO#";
+        int totalDistance = 0;
+        int size = 4;
+
+        for (int i = 0; i < this->state.size(); i++) {
+            if(this->state[i] != '#'){
+                // Calculate the position (x, y) of the current tile in the state
+                int x1 = i / size;
+                int y1 = i % size;
+
+                // Find the position (x, y) of the same tile in the goal state
+                int x2 = goalState.find(this->state[i]) / size;
+                int y2 = goalState.find(this->state[i]) % size;
+
+                // Calculate the Manhattan distance for the current tile and add to totalDistance
+                totalDistance += manhattanDistance(x1, y1, x2, y2);
+            }
+        }
+
+        return totalDistance;
+    }
 public:
     string state;
     Node* prev;
+    int cost;
 
-    Node(const string &state, Node *prev) : state(state), prev(prev) {}
+    Node(const string &state, Node *prev) : state(state), prev(prev),cost(h2Cost()) {}
 
-    bool operator==(const Node &rhs) const {
-        return state == rhs.state;
-    }
-
-    bool operator!=(const Node &rhs) const {
-        return !(rhs.state == this->state);
-    }
-
-    bool operator<(const Node &rhs) const {
-        return state < rhs.state;
-    }
-
-    bool operator>(const Node &rhs) const {
-        return rhs.state < this->state;
-    }
-
-    bool operator<=(const Node &rhs) const {
-        return !(rhs.state < this->state);
-    }
-
-    bool operator>=(const Node &rhs) const {
-        return !(this->state < rhs.state);
-    }
+//    bool operator==(const Node &rhs) const {
+//        return ((state == rhs.state) && (cost == rhs.cost));
+//    }
+//
+//    bool operator!=(const Node &rhs) const {
+//        return ((rhs.state != this->state) && (rhs.cost != this->cost));
+//    }
+//
+//    bool operator<(const Node &rhs) const {
+//        return ((state < rhs.state) && (cost < rhs.cost));
+//    }
+//
+//    bool operator>(const Node &rhs) const {
+//        return((rhs.state < this->state) && (rhs.cost < this->cost));
+//    }
+//
+//    bool operator<=(const Node &rhs) const {
+//        return (!(rhs.state < this->state) && (rhs.cost < this->cost));
+//    }
+//
+//    bool operator>=(const Node &rhs) const {
+//        return (!(this->state < rhs.state) && (this->cost < rhs.cost));
+//    }
 
     friend ostream &operator<<(ostream &os, const Node &node) {
-        os << "state: " << node.state << " prev: " << node.prev;
+        os << "state: " << node.state << " cost: " << node.cost << " prev: " << node.prev;
         return os;
     }
 };
@@ -110,13 +150,21 @@ public:
 bool visited(vector<Node*>& set,Node* node){
     bool flag = false;
     for(const Node* n : set){
-        if(node->state == n->state){
+        if((node->state == n->state) && (node->cost == n->cost)){
             flag = true;
             break;
         }
     }
     return(flag);
 }
+
+// Custom comparison function for the priority queue
+struct NodeCompare {
+    bool operator()(const Node* lhs, const Node* rhs) const {
+        // We want to prioritize nodes with lower cost
+        return lhs->cost > rhs->cost;
+    }
+};
 
 int main() {
     string input;
@@ -125,17 +173,20 @@ int main() {
     vector<Node*> explored;
     Node* node = new Node(input,nullptr);
     explored.push_back(node);
-    queue<Node*> frontier;
+    priority_queue<Node*,vector<Node*>,NodeCompare> frontier;
     frontier.push(node);
     while(!frontier.empty()){
         //sample new node
-        node = frontier.front();
+        node = frontier.top();
         frontier.pop();
         //check goal state
         if(node->state == "ABCDEFGHIJKLMNO#"){
+//            printf("GOAL FOUND!\n");
             //compute score back to init
             int cost = 0;
             while(node->prev != nullptr){
+//                printBoard(node->state);
+//                cout << endl;
                 node = node->prev;
                 cost++;
             }
@@ -147,7 +198,7 @@ int main() {
         for (const string& move : moves){
             string newState = makeMove(node->state,move);
             Node* tmpNode = new Node(newState,node);
-            if(!binary_search(explored.begin(),explored.end(),tmpNode)){
+            if(!visited(explored,tmpNode)){
                 frontier.push(tmpNode);
                 explored.push_back(tmpNode);
             }

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <vector>
 #include <queue>
+#include <unordered_set>
 
 using namespace std;
 
@@ -16,38 +17,6 @@ void printBoard(string& input){
         }
         else{
             cout << ' ' << input[i];
-        }
-    }
-}
-
-
-string makeMove(const string& board,const string& move){
-    string board2;
-    board2.assign(board);
-
-    size_t space = board2.find('#');
-    if(move == "UP"){
-        if((space-4) >= 0){
-            swap(board2[space], board2[space - 4]);
-            return(board2);
-        }
-    }
-    else if(move == "DOWN"){
-        if((space+4) < board2.length()){
-            swap(board2[space], board2[space + 4]);
-            return(board2);
-        }
-    }
-    else if(move == "LEFT"){
-        if((space-1) >= 0){
-            swap(board2[space], board2[space - 1]);
-            return(board2);
-        }
-    }
-    else if(move == "RIGHT"){
-        if((space+1) < board2.length()){
-            swap(board2[space], board2[space + 1]);
-            return(board2);
         }
     }
 }
@@ -83,11 +52,6 @@ private:
         return(icost);
     }
 
-    // Utility function to calculate Manhattan distance between two positions
-    int manhattanDistance(int x1, int y1, int x2, int y2) {
-        return (abs(x1 - x2) + abs(y1 - y2));
-    }
-
     int h2Cost(){
         string goalState = "ABCDEFGHIJKLMNO#";
         int totalDistance = 0;
@@ -104,7 +68,7 @@ private:
                 int y2 = goalState.find(this->state[i]) % size;
 
                 // Calculate the Manhattan distance for the current tile and add to totalDistance
-                totalDistance += manhattanDistance(x1, y1, x2, y2);
+                totalDistance += (abs(x1 - x2) + abs(y1 - y2));
             }
         }
 
@@ -113,33 +77,25 @@ private:
 public:
     string state;
     Node* prev;
-    int cost;
+    int g; // Cost from the starting node to this node
+    int cost; // The total cost (f = g + h)
+
+    Node(const string& state, Node* prev, int g) : state(state), prev(prev), g(g), cost(g + h2Cost()) {}
 
     Node(const string &state, Node *prev) : state(state), prev(prev),cost(h2Cost()) {}
 
-//    bool operator==(const Node &rhs) const {
-//        return ((state == rhs.state) && (cost == rhs.cost));
-//    }
-//
-//    bool operator!=(const Node &rhs) const {
-//        return ((rhs.state != this->state) && (rhs.cost != this->cost));
-//    }
-//
-//    bool operator<(const Node &rhs) const {
-//        return ((state < rhs.state) && (cost < rhs.cost));
-//    }
-//
-//    bool operator>(const Node &rhs) const {
-//        return((rhs.state < this->state) && (rhs.cost < this->cost));
-//    }
-//
-//    bool operator<=(const Node &rhs) const {
-//        return (!(rhs.state < this->state) && (rhs.cost < this->cost));
-//    }
-//
-//    bool operator>=(const Node &rhs) const {
-//        return (!(this->state < rhs.state) && (this->cost < rhs.cost));
-//    }
+    void makeMove(const string& move) {
+        size_t space = state.find('#');
+        if (move == "UP" && (space - 4) >= 0) {
+            swap(state[space], state[space - 4]);
+        } else if (move == "DOWN" && (space + 4) < state.length()) {
+            swap(state[space], state[space + 4]);
+        } else if (move == "LEFT" && (space - 1) >= 0) {
+            swap(state[space], state[space - 1]);
+        } else if (move == "RIGHT" && (space + 1) < state.length()) {
+            swap(state[space], state[space + 1]);
+        }
+    }
 
     friend ostream &operator<<(ostream &os, const Node &node) {
         os << "state: " << node.state << " cost: " << node.cost << " prev: " << node.prev;
@@ -147,7 +103,7 @@ public:
     }
 };
 
-bool visited(vector<Node*>& set,Node* node){
+bool visited(unordered_set<Node*>& set,Node* node){
     bool flag = false;
     for(const Node* n : set){
         if((node->state == n->state) && (node->cost == n->cost)){
@@ -170,40 +126,38 @@ int main() {
     string input;
     cin >> input;
     // BFS
-    vector<Node*> explored;
-    Node* node = new Node(input,nullptr);
-    explored.push_back(node);
-    priority_queue<Node*,vector<Node*>,NodeCompare> frontier;
+    unordered_set<string> explored;
+    Node* node = new Node(input, nullptr, 0);
+    explored.insert(input);
+    priority_queue<Node*, vector<Node*>, NodeCompare> frontier;
     frontier.push(node);
-    while(!frontier.empty()){
-        //sample new node
+    while (!frontier.empty()) {
+        // Sample new node
         node = frontier.top();
         frontier.pop();
-        //check goal state
-        if(node->state == "ABCDEFGHIJKLMNO#"){
-//            printf("GOAL FOUND!\n");
-            //compute score back to init
+        // Check goal state
+        if (node->state == "ABCDEFGHIJKLMNO#") {
+            // Compute score back to init
             int cost = 0;
-            while(node->prev != nullptr){
-//                printBoard(node->state);
-//                cout << endl;
+            while (node->prev != nullptr) {
                 node = node->prev;
                 cost++;
             }
             cout << cost << endl;
             return 0;
         }
-        //generate available moves
+        // Generate available moves
         vector<string> moves = getMoves(node->state);
-        for (const string& move : moves){
-            string newState = makeMove(node->state,move);
-            Node* tmpNode = new Node(newState,node);
-            if(!visited(explored,tmpNode)){
+        for (const string& move : moves) {
+            // Optimize memory allocation by reusing nodes
+            Node* tmpNode = new Node(node->state, node, node->g + 1);
+            tmpNode->makeMove(move);
+            if (explored.find(tmpNode->state) == explored.end()) {
                 frontier.push(tmpNode);
-                explored.push_back(tmpNode);
+                explored.insert(tmpNode->state);
             }
-            else{
-                delete(tmpNode);
+            else {
+                delete (tmpNode);
             }
         }
     }

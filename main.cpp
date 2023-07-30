@@ -80,9 +80,17 @@ public:
     int g; // Cost from the starting node to this node
     int cost; // The total cost (f = g + h)
 
-    Node(const string& state, Node* prev, int g) : state(state), prev(prev), g(g), cost(g + h2Cost()) {}
-
-    Node(const string &state, Node *prev) : state(state), prev(prev),cost(h2Cost()) {}
+    Node(const string& state, Node* prev, int g,bool useCost,bool useH1) : state(state), prev(prev), g(g) {
+        cost = g;
+        if(useCost){
+            if(useH1){
+                cost += h1Cost();
+            }
+            else{
+                cost += h2Cost();
+            }
+        }
+    }
 
     void makeMove(const string& move) {
         size_t space = state.find('#');
@@ -103,17 +111,6 @@ public:
     }
 };
 
-bool visited(unordered_set<Node*>& set,Node* node){
-    bool flag = false;
-    for(const Node* n : set){
-        if((node->state == n->state) && (node->cost == n->cost)){
-            flag = true;
-            break;
-        }
-    }
-    return(flag);
-}
-
 // Custom comparison function for the priority queue
 struct NodeCompare {
     bool operator()(const Node* lhs, const Node* rhs) const {
@@ -122,15 +119,57 @@ struct NodeCompare {
     }
 };
 
-int main() {
-    string input;
-    cin >> input;
+int bfsSearch(const string& input){
     // BFS
     unordered_set<string> explored;
-    Node* node = new Node(input, nullptr, 0);
+    Node* node = new Node(input, nullptr, 0,false,false);
     explored.insert(input);
-    priority_queue<Node*, vector<Node*>, NodeCompare> frontier;
+    queue<Node*> frontier;
     frontier.push(node);
+    int nodeCount = 0;
+    while (!frontier.empty()) {
+        // Sample new node
+        node = frontier.front();
+        frontier.pop();
+        // Check goal state
+        if (node->state == "ABCDEFGHIJKLMNO#") {
+            // Compute score back to init
+            int cost = 0;
+            while (node->prev != nullptr) {
+                node = node->prev;
+                cost++;
+            }
+            cout << cost << endl;
+            //Save Node Count
+            return nodeCount;
+        }
+        // Generate available moves
+        vector<string> moves = getMoves(node->state);
+        for (const string& move : moves) {
+            // Optimize memory allocation by reusing nodes
+            Node* tmpNode = new Node(node->state, node, node->g + 1,false,false);
+            tmpNode->makeMove(move);
+            if (explored.find(tmpNode->state) == explored.end()) {
+                frontier.push(tmpNode);
+                explored.insert(tmpNode->state);
+                nodeCount++;
+            }
+            else {
+                delete (tmpNode);
+            }
+        }
+    }
+
+    return INT_MAX;
+}
+
+int ASearch1(const string& input){
+    unordered_set<string> explored;
+    Node* node = new Node(input, nullptr, 0,true,true);
+    explored.insert(input);
+    priority_queue<Node*,vector<Node*>,NodeCompare> frontier;
+    frontier.push(node);
+    int nodeCount = 0;
     while (!frontier.empty()) {
         // Sample new node
         node = frontier.top();
@@ -144,17 +183,19 @@ int main() {
                 cost++;
             }
             cout << cost << endl;
-            return 0;
+            //Save Node Count
+            return nodeCount;
         }
         // Generate available moves
         vector<string> moves = getMoves(node->state);
         for (const string& move : moves) {
             // Optimize memory allocation by reusing nodes
-            Node* tmpNode = new Node(node->state, node, node->g + 1);
+            Node* tmpNode = new Node(node->state, node, node->g + 1,true,true);
             tmpNode->makeMove(move);
             if (explored.find(tmpNode->state) == explored.end()) {
                 frontier.push(tmpNode);
                 explored.insert(tmpNode->state);
+                nodeCount++;
             }
             else {
                 delete (tmpNode);
@@ -162,5 +203,55 @@ int main() {
         }
     }
 
+    return INT_MAX;
+}
+
+int ASearch2(const string& input){
+    unordered_set<string> explored;
+    Node* node = new Node(input, nullptr, 0,true,false);
+    explored.insert(input);
+    priority_queue<Node*,vector<Node*>,NodeCompare> frontier;
+    frontier.push(node);
+    int nodeCount = 0;
+    while (!frontier.empty()) {
+        // Sample new node
+        node = frontier.top();
+        frontier.pop();
+        // Check goal state
+        if (node->state == "ABCDEFGHIJKLMNO#") {
+            // Compute score back to init
+            int cost = 0;
+            while (node->prev != nullptr) {
+                node = node->prev;
+                cost++;
+            }
+            cout << cost << endl;
+            //Save Node Count
+            return nodeCount;
+        }
+        // Generate available moves
+        vector<string> moves = getMoves(node->state);
+        for (const string& move : moves) {
+            // Optimize memory allocation by reusing nodes
+            Node* tmpNode = new Node(node->state, node, node->g + 1,true,false);
+            tmpNode->makeMove(move);
+            if (explored.find(tmpNode->state) == explored.end()) {
+                frontier.push(tmpNode);
+                explored.insert(tmpNode->state);
+                nodeCount++;
+            }
+            else {
+                delete (tmpNode);
+            }
+        }
+    }
+
+    return INT_MAX;
+}
+
+int main() {
+    string input;
+    cin >> input;
+    
     return 0;
 }

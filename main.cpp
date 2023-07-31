@@ -4,6 +4,9 @@
 #include <vector>
 #include <queue>
 #include <unordered_set>
+#include <fstream>
+#include <cstring>
+#include <climits>
 
 using namespace std;
 
@@ -119,7 +122,7 @@ struct NodeCompare {
     }
 };
 
-int bfsSearch(const string& input){
+int bfsSearch(string input){
     // BFS
     unordered_set<string> explored;
     Node* node = new Node(input, nullptr, 0,false,false);
@@ -139,7 +142,10 @@ int bfsSearch(const string& input){
                 node = node->prev;
                 cost++;
             }
-            cout << cost << endl;
+            cout << cost << "-" << nodeCount << endl;
+            ofstream outputFile("bfsSearch.txt",ios::app);
+            outputFile << cost << "-" << nodeCount << '\n';
+            outputFile.close();
             //Save Node Count
             return nodeCount;
         }
@@ -163,7 +169,7 @@ int bfsSearch(const string& input){
     return INT_MAX;
 }
 
-int ASearch1(const string& input){
+int ASearch1(string input){
     unordered_set<string> explored;
     Node* node = new Node(input, nullptr, 0,true,true);
     explored.insert(input);
@@ -182,7 +188,10 @@ int ASearch1(const string& input){
                 node = node->prev;
                 cost++;
             }
-            cout << cost << endl;
+            cout << cost << "-" << nodeCount << endl;
+            ofstream outputFile("A1Search.txt",ios::app);
+            outputFile << cost << "-" << nodeCount << '\n';
+            outputFile.close();
             //Save Node Count
             return nodeCount;
         }
@@ -206,7 +215,7 @@ int ASearch1(const string& input){
     return INT_MAX;
 }
 
-int ASearch2(const string& input){
+int ASearch2(string input){
     unordered_set<string> explored;
     Node* node = new Node(input, nullptr, 0,true,false);
     explored.insert(input);
@@ -225,7 +234,10 @@ int ASearch2(const string& input){
                 node = node->prev;
                 cost++;
             }
-            cout << cost << endl;
+            cout << cost << "-" << nodeCount << endl;
+            ofstream outputFile("A2Search.txt",ios::app);
+            outputFile << cost << "-" << nodeCount << '\n';
+            outputFile.close();
             //Save Node Count
             return nodeCount;
         }
@@ -250,8 +262,30 @@ int ASearch2(const string& input){
 }
 
 int main() {
-    string input;
-    cin >> input;
-    
+    // Open the text file
+    ifstream inputFile("puzzles.txt");
+
+    // Check if the file is successfully opened
+    if (!inputFile) {
+        cerr << "Error opening the file: " << strerror(errno) <<  endl;
+        return 1;
+    }
+
+
+    for (string input; getline(inputFile, input);) {
+        if(!input.empty()){
+            cout << input << endl << "BFS Results:\n";
+            bfsSearch(input);
+            cout << "A1 Results:\n";
+            ASearch1(input);
+            cout << "A2 Results:\n";
+            ASearch2(input);
+        }
+    }
+    cout << "done";
+
+    // Close the file when done
+    inputFile.close();
+
     return 0;
 }

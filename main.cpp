@@ -146,6 +146,9 @@ int bfsSearch(string input){
             ofstream outputFile("bfsSearch.txt",ios::app);
             outputFile << cost << "-" << nodeCount << '\n';
             outputFile.close();
+            ofstream resFile("performanceSummary.txt",ios::app);
+            resFile << cost << "\t\t" << nodeCount;
+            resFile.close();
             //Save Node Count
             return nodeCount;
         }
@@ -192,6 +195,9 @@ int ASearch1(string input){
             ofstream outputFile("A1Search.txt",ios::app);
             outputFile << cost << "-" << nodeCount << '\n';
             outputFile.close();
+            ofstream resFile("performanceSummary.txt",ios::app);
+            resFile << "\t\t" << nodeCount;
+            resFile.close();
             //Save Node Count
             return nodeCount;
         }
@@ -238,6 +244,9 @@ int ASearch2(string input){
             ofstream outputFile("A2Search.txt",ios::app);
             outputFile << cost << "-" << nodeCount << '\n';
             outputFile.close();
+            ofstream resFile("performanceSummary.txt",ios::app);
+            resFile << "\t\t" << nodeCount << "\n";
+            resFile.close();
             //Save Node Count
             return nodeCount;
         }
@@ -271,9 +280,14 @@ int main() {
         return 1;
     }
 
-
+    ofstream outputFile("performanceSummary.txt",ios::app);
+    outputFile << "Puzzle\t\t" << "Solution Length\t\t" << "BFS\t\t" << "A*-h1\t\t" << "A*-h2" << endl;
+    outputFile.close();
     for (string input; getline(inputFile, input);) {
         if(!input.empty()){
+            ofstream outputFile("performanceSummary.txt",ios::app);
+            outputFile << input << "\t\t";
+            outputFile.close();
             cout << input << endl << "BFS Results:\n";
             bfsSearch(input);
             cout << "A1 Results:\n";
